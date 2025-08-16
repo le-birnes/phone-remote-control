@@ -24,7 +24,7 @@ if sys.platform == 'win32':
     try:
         is_admin = ctypes.windll.shell32.IsUserAnAdmin()
         if not is_admin:
-            print("⚠ Running without administrator privileges.")
+            print("WARNING: Running without administrator privileges.")
             print("  Some applications may not respond to clicks.")
             print("  To fix: Run as administrator")
     except:
@@ -37,7 +37,7 @@ async def handle_websocket(websocket):
     """Handle WebSocket connections from phones"""
     clients.add(websocket)
     client_ip = websocket.remote_address[0] if websocket.remote_address else "unknown"
-    print(f"📱 Phone connected from {client_ip}")
+    print(f"[+] Phone connected from {client_ip}")
     
     try:
         async for message in websocket:
@@ -73,13 +73,13 @@ async def handle_websocket(websocket):
                     pyautogui.write(data['text'])
                 
             except Exception as e:
-                print(f"❌ Error processing command: {e}")
+                print(f"[ERROR] Error processing command: {e}")
                 
     except websockets.exceptions.ConnectionClosed:
         pass
     finally:
         clients.remove(websocket)
-        print(f"📱 Phone disconnected from {client_ip}")
+        print(f"[-] Phone disconnected from {client_ip}")
 
 async def serve_interface(request):
     """Serve the HTML interface"""
@@ -166,7 +166,7 @@ async def serve_home(request):
     </head>
     <body>
         <div class="container">
-            <h1>📱 Phone Remote Control</h1>
+            <h1>Phone Remote Control</h1>
             <div class="versions">
                 <a href="/latest" class="version-card recommended">
                     <div class="version-title">Latest</div>
@@ -174,7 +174,7 @@ async def serve_home(request):
                         Double-tap clicking<br>
                         Enhanced gestures<br>
                         Better performance<br>
-                        <strong>✨ Recommended</strong>
+                        <strong>Recommended</strong>
                     </div>
                 </a>
                 <a href="/stable" class="version-card">
@@ -219,11 +219,11 @@ async def main():
     ws_server = await websockets.serve(handle_websocket, '0.0.0.0', ws_port)
     
     print("\n" + "="*50)
-    print("📱 PHONE REMOTE CONTROL SERVER")
+    print("PHONE REMOTE CONTROL SERVER")
     print("="*50)
-    print(f"\n✅ Server running at: http://{local_ip}:{http_port}")
-    print(f"📡 WebSocket port: {ws_port}")
-    print(f"\n🔗 Direct links:")
+    print(f"\n[OK] Server running at: http://{local_ip}:{http_port}")
+    print(f"[WS] WebSocket port: {ws_port}")
+    print(f"\nDirect links:")
     print(f"   Latest: http://{local_ip}:{http_port}/latest")
     print(f"   Stable: http://{local_ip}:{http_port}/stable")
     print("\n" + "="*50)
@@ -243,4 +243,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n\n✋ Server stopped")
+        print("\n\nServer stopped.")
