@@ -30,11 +30,15 @@ Use your phone as a wireless mouse and keyboard for your PC via local WiFi.
 ## Usage
 
 1. **Start the server** on your PC
+   - For full functionality: Run `start_remote_control_admin.bat` (recommended)
+   - Or regular mode: Run `python remote_control_server.py`
 2. **Note the IP address** displayed (e.g., `192.168.1.100:8080`)
 3. **Open phone browser** and navigate to that address
 4. **Use the interface**:
    - Touch and drag to move mouse
-   - Tap to click
+   - **Double-tap for easy clicking** (NEW!)
+   - Single tap also clicks
+   - Long press for right-click
    - Use on-screen keyboard for typing
    - Swipe for scrolling
 
@@ -49,8 +53,9 @@ Use your phone as a wireless mouse and keyboard for your PC via local WiFi.
 
 - `remote_control_server.py` - Main server script
 - `phone_remote_control.html` - Basic interface
-- `phone_remote_control_v2.html` - Enhanced interface
+- `phone_remote_control_v2.html` - Enhanced interface with double-tap
 - `start_remote_control.bat` - Windows launcher
+- `start_remote_control_admin.bat` - Admin launcher (for terminal clicks)
 
 ## Security Note
 

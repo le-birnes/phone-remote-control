@@ -39,6 +39,19 @@ from PIL import Image
 pyautogui.FAILSAFE = False  # Disable fail-safe for remote control
 pyautogui.PAUSE = 0.01
 
+# Try to run with elevated privileges on Windows
+if sys.platform == 'win32':
+    import ctypes
+    try:
+        # Check if running as admin
+        is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+        if not is_admin:
+            print("Note: Running without administrator privileges.")
+            print("Some applications may not respond to clicks.")
+            print("To fix: Run this script as administrator.")
+    except:
+        pass
+
 # Store connected clients
 clients = set()
 

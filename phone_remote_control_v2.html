@@ -647,10 +647,10 @@
                     showGesture('Right Click');
                     tapCount = 0;
                 } else if (tapCount >= 2) {
-                    // Double tap = double click
+                    // Double tap = single click (easier for mobile)
                     clearTimeout(tapTimer);
-                    sendCommand({ type: 'click', button: 'left', double: true });
-                    showGesture('Double Click');
+                    sendCommand({ type: 'click', button: 'left' });
+                    showGesture('Click');
                     tapCount = 0;
                 } else {
                     // Single tap = left click
