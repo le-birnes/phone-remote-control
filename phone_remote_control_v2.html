@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>PC Remote Control v2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        .setup-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+        }
+        
+        .setup-screen.hidden {
+            display: none;
+        }
+        
+        .setup-box {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .setup-box h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #0f9d58;
+        }
+        
+        .setup-box input, .setup-box select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #2a2a4e;
+            border-radius: 8px;
+            background: #0f3460;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .setup-box button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #0f9d58;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .setup-box button:active {
+            transform: scale(0.98);
+        }
+        
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background: #1a1a2e;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .status.connected {
+            background: #0f9d58;
+        }
+        
+        .status.disconnected {
+            background: #e94560;
+        }
+        
+        .controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .touchpad {
+            flex: 1;
+            background: #0f3460;
+            border-radius: 15px;
+            position: relative;
+            touch-action: none;
+            min-height: 200px;
+            border: 2px solid #16213e;
+            overflow: hidden;
+        }
+        
+        .touchpad-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.2;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        
+        .touch-indicator {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(15,157,88,0.8) 0%, rgba(15,157,88,0) 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            animation: pulse 0.3s ease-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+        
+        .mouse-buttons {
+            display: flex;
+            gap: 10px;
+            height: 60px;
+        }
+        
+        .mouse-btn {
+            flex: 1;
+            background: #16213e;
+            border: 2px solid #0f3460;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mouse-btn:active {
+            background: #0f9d58;
+            transform: scale(0.95);
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .action-btn {
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            color: white;
+            padding: 12px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .action-btn:active {
+            background: #0f9d58;
+            transform: scale(0.95);
+        }
+        
+        .keyboard-toggle {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #0f9d58;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        
+        .keyboard-toggle:active {
+            transform: scale(0.9);
+        }
+        
+        .keyboard-input {
+            position: fixed;
+            bottom: -100px;
+            left: 0;
+            width: 100%;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .scroll-area {
+            height: 60px;
+            background: #0f3460;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            border: 2px solid #16213e;
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .settings-btn {
+            padding: 8px 15px;
+            background: #16213e;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .sensitivity-slider {
+            margin: 10px 0;
+        }
+        
+        .sensitivity-slider label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .sensitivity-slider input {
+            width: 100%;
+        }
+        
+        .gesture-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15,157,88,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 1500;
+        }
+        
+        @media (max-height: 600px) {
+            .touchpad {
+                min-height: 150px;
+            }
+            .actions {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Setup Screen -->
+    <div class="setup-screen" id="setupScreen">
+        <div class="setup-box">
+            <h2>🖥️ Connect to PC</h2>
+            <p style="margin-bottom: 20px; opacity: 0.8; font-size: 14px;">
+                Enter your computer's IP address from the server console.
+            </p>
+            <input type="text" id="serverIp" placeholder="Computer IP (e.g., 192.168.1.100)" value="">
+            <input type="number" id="serverPort" placeholder="Port (default: 8765)" value="8765">
+            
+            <div class="sensitivity-slider">
+                <label>Mouse Sensitivity: <span id="sensitivityValue">2.0</span></label>
+                <input type="range" id="sensitivity" min="0.5" max="5" step="0.5" value="2">
+            </div>
+            
+            <button onclick="connectToServer()">Connect</button>
+            <button onclick="useLastConnection()" style="background: #2196F3;">Use Last Connection</button>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="container">
+        <div class="header">
+            <span id="status" class="status disconnected">Not Connected</span>
+            <div style="display: flex; gap: 10px;">
+                <span id="gestureInfo" style="font-size: 12px; opacity: 0.6;"></span>
+                <div class="settings-btn" onclick="showSetup()">⚙️</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="touchpad" id="touchpad">
+                <div class="touchpad-info">TOUCHPAD</div>
+                <div class="touch-indicator" id="touchIndicator"></div>
+            </div>
+            
+            <div class="mouse-buttons">
+                <div class="mouse-btn" id="leftClick">LEFT</div>
+                <div class="mouse-btn" id="rightClick">RIGHT</div>
+                <div class="mouse-btn" id="middleClick">MIDDLE</div>
+                <div class="mouse-btn" id="dragToggle" style="background: #16213e;">DRAG</div>
+            </div>
+            
+            <div class="scroll-area" id="scrollArea">
+                <div>📜 SCROLL (Swipe up/down)</div>
+            </div>
+            
+            <div class="actions">
+                <div class="action-btn" onclick="sendKey('escape')">ESC</div>
+                <div class="action-btn" onclick="sendKey('enter')">ENTER</div>
+                <div class="action-btn" onclick="sendKey('space')">SPACE</div>
+                <div class="action-btn" onclick="sendKey('backspace')">←</div>
+                <div class="action-btn" onclick="sendKey('tab')">TAB</div>
+                <div class="action-btn" onclick="sendCombo(['alt', 'tab'])">ALT+TAB</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'c'])">COPY</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'v'])">PASTE</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'z'])">UNDO</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'a'])">ALL</div>
+                <div class="action-btn" onclick="sendKey('delete')">DEL</div>
+                <div class="action-btn" onclick="sendCombo(['win'])">WIN</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="keyboard-toggle" onclick="toggleKeyboard()">⌨️</div>
+    <div class="gesture-info" id="gesturePopup"></div>
+    
+    <input type="text" id="keyboardInput" class="keyboard-input" />
+    
+    <script>
+        let ws = null;
+        let touchpadActive = false;
+        let lastX = 0;
+        let lastY = 0;
+        let lastTouchTime = 0;
+        let lastTapTime = 0;
+        let tapCount = 0;
+        let tapTimer = null;
+        let holdTimer = null;
+        let isDragging = false;
+        let sensitivity = 2.0;
+        let serverConfig = {
+            ip: '',
+            port: 8765
+        };
+        
+        // Visual feedback
+        function showTouchIndicator(x, y) {
+            const indicator = document.getElementById('touchIndicator');
+            const touchpad = document.getElementById('touchpad');
+            const rect = touchpad.getBoundingClientRect();
+            
+            indicator.style.left = (x - rect.left) + 'px';
+            indicator.style.top = (y - rect.top) + 'px';
+            indicator.style.display = 'block';
+            
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 300);
+        }
+        
+        function showGesture(text) {
+            const popup = document.getElementById('gesturePopup');
+            popup.textContent = text;
+            popup.style.display = 'block';
+            
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 500);
+        }
+        
+        // Load saved connection
+        window.onload = () => {
+            const saved = localStorage.getItem('serverConfig');
+            if (saved) {
+                serverConfig = JSON.parse(saved);
+                document.getElementById('serverIp').value = serverConfig.ip;
+                document.getElementById('serverPort').value = serverConfig.port;
+                if (serverConfig.sensitivity) {
+                    sensitivity = serverConfig.sensitivity;
+                    document.getElementById('sensitivity').value = sensitivity;
+                    document.getElementById('sensitivityValue').textContent = sensitivity.toFixed(1);
+                }
+            }
+            
+            // Sensitivity slider
+            document.getElementById('sensitivity').addEventListener('input', (e) => {
+                sensitivity = parseFloat(e.target.value);
+                document.getElementById('sensitivityValue').textContent = sensitivity.toFixed(1);
+            });
+        };
+        
+        function showSetup() {
+            document.getElementById('setupScreen').classList.remove('hidden');
+            if (ws) {
+                ws.close();
+            }
+        }
+        
+        function connectToServer() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value || 8765;
+            
+            if (!ip) {
+                alert('Please enter the computer IP address');
+                return;
+            }
+            
+            serverConfig = { ip, port, sensitivity };
+            localStorage.setItem('serverConfig', JSON.stringify(serverConfig));
+            
+            document.getElementById('setupScreen').classList.add('hidden');
+            connect();
+        }
+        
+        function useLastConnection() {
+            if (serverConfig.ip) {
+                document.getElementById('setupScreen').classList.add('hidden');
+                connect();
+            } else {
+                alert('No saved connection found');
+            }
+        }
+        
+        // Connect to WebSocket
+        function connect() {
+            if (!serverConfig.ip) {
+                showSetup();
+                return;
+            }
+            
+            const wsUrl = `ws://${serverConfig.ip}:${serverConfig.port}`;
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    document.getElementById('status').textContent = 'Connected';
+                    document.getElementById('status').className = 'status connected';
+                };
+                
+                ws.onclose = () => {
+                    document.getElementById('status').textContent = 'Disconnected';
+                    document.getElementById('status').className = 'status disconnected';
+                    setTimeout(connect, 2000);
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    document.getElementById('status').textContent = 'Connection Error';
+                    document.getElementById('status').className = 'status disconnected';
+                };
+            } catch (e) {
+                console.error('Failed to connect:', e);
+                showSetup();
+            }
+        }
+        
+        // Send command to server
+        function sendCommand(cmd) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(cmd));
+                return true;
+            }
+            return false;
+        }
+        
+        // Touchpad handling with gestures
+        const touchpad = document.getElementById('touchpad');
+        let touchStartTime = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchMoved = false;
+        let multiTouch = false;
+        
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touches = e.touches;
+            
+            // Check for multi-touch (two fingers)
+            multiTouch = touches.length > 1;
+            
+            if (touches.length === 1) {
+                const touch = touches[0];
+                
+                // Show touch indicator
+                showTouchIndicator(touch.clientX, touch.clientY);
+                
+                touchpadActive = true;
+                lastX = touch.clientX;
+                lastY = touch.clientY;
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                touchStartTime = Date.now();
+                touchMoved = false;
+                lastTouchTime = Date.now();
+                
+                // Handle double tap for double-click
+                const currentTime = Date.now();
+                const tapInterval = currentTime - lastTapTime;
+                
+                if (tapInterval < 300) {
+                    tapCount++;
+                } else {
+                    tapCount = 1;
+                }
+                
+                lastTapTime = currentTime;
+                
+                // Clear existing timers
+                if (tapTimer) clearTimeout(tapTimer);
+                if (holdTimer) clearTimeout(holdTimer);
+                
+                // Hold detection for drag or right-click
+                holdTimer = setTimeout(() => {
+                    if (touchpadActive && !touchMoved) {
+                        if (tapCount === 2) {
+                            // Double tap and hold - start drag
+                            isDragging = true;
+                            sendCommand({ type: 'mousedown', button: 'left' });
+                            showGesture('Drag Start');
+                            document.getElementById('dragToggle').style.background = '#0f9d58';
+                        } else {
+                            // Single long press - right click
+                            sendCommand({ type: 'click', button: 'right' });
+                            showGesture('Right Click (Hold)');
+                            if (navigator.vibrate) navigator.vibrate(50);
+                        }
+                    }
+                }, 500);
+            } else if (touches.length === 2) {
+                // Two fingers detected
+                const touch1 = touches[0];
+                const touch2 = touches[1];
+                
+                // Show indicators for both touches
+                showTouchIndicator(touch1.clientX, touch1.clientY);
+                showTouchIndicator(touch2.clientX, touch2.clientY);
+                
+                // Clear timers for multi-touch
+                if (tapTimer) clearTimeout(tapTimer);
+                if (holdTimer) clearTimeout(holdTimer);
+            }
+        });
+        
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!touchpadActive) return;
+            
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - lastX;
+                const deltaY = touch.clientY - lastY;
+                
+                // Check if actually moved (more than 5 pixels from start)
+                const totalMoveX = Math.abs(touch.clientX - touchStartX);
+                const totalMoveY = Math.abs(touch.clientY - touchStartY);
+                if (totalMoveX > 5 || totalMoveY > 5) {
+                    touchMoved = true;
+                }
+                
+                // Send mouse move command with sensitivity
+                if (Math.abs(deltaX) > 0 || Math.abs(deltaY) > 0) {
+                    sendCommand({
+                        type: 'mouse_move',
+                        dx: deltaX * sensitivity,
+                        dy: deltaY * sensitivity
+                    });
+                    
+                    lastX = touch.clientX;
+                    lastY = touch.clientY;
+                }
+            }
+        });
+        
+        touchpad.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            
+            // Clear hold timer
+            if (holdTimer) clearTimeout(holdTimer);
+            
+            const touchDuration = Date.now() - touchStartTime;
+            
+            // Release drag if active
+            if (isDragging) {
+                sendCommand({ type: 'mouseup', button: 'left' });
+                isDragging = false;
+                document.getElementById('dragToggle').style.background = '#16213e';
+                showGesture('Drag End');
+            } else if (!touchMoved && touchDuration < 300) {
+                // Quick tap without significant movement
+                if (multiTouch) {
+                    // Two-finger tap = right click
+                    sendCommand({ type: 'click', button: 'right' });
+                    showGesture('Right Click');
+                    tapCount = 0;
+                } else if (tapCount >= 2) {
+                    // Double tap = double click
+                    clearTimeout(tapTimer);
+                    sendCommand({ type: 'click', button: 'left', double: true });
+                    showGesture('Double Click');
+                    tapCount = 0;
+                } else {
+                    // Single tap = left click
+                    // Wait briefly to check for double tap
+                    clearTimeout(tapTimer);
+                    tapTimer = setTimeout(() => {
+                        sendCommand({ type: 'click', button: 'left' });
+                        showGesture('Click');
+                        tapCount = 0;
+                    }, 200);
+                }
+            }
+            
+            touchpadActive = false;
+            multiTouch = false;
+        });
+        
+        // Mouse buttons
+        document.getElementById('leftClick').addEventListener('click', () => {
+            sendCommand({ type: 'click', button: 'left' });
+        });
+        
+        document.getElementById('rightClick').addEventListener('click', () => {
+            sendCommand({ type: 'click', button: 'right' });
+        });
+        
+        document.getElementById('middleClick').addEventListener('click', () => {
+            sendCommand({ type: 'click', button: 'middle' });
+        });
+        
+        // Drag toggle button
+        document.getElementById('dragToggle').addEventListener('click', () => {
+            isDragging = !isDragging;
+            if (isDragging) {
+                sendCommand({ type: 'mousedown', button: 'left' });
+                document.getElementById('dragToggle').style.background = '#0f9d58';
+                showGesture('Drag ON');
+            } else {
+                sendCommand({ type: 'mouseup', button: 'left' });
+                document.getElementById('dragToggle').style.background = '#16213e';
+                showGesture('Drag OFF');
+            }
+        });
+        
+        // Scroll area
+        const scrollArea = document.getElementById('scrollArea');
+        let scrollStartY = 0;
+        
+        scrollArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            scrollStartY = e.touches[0].clientY;
+        });
+        
+        scrollArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const deltaY = scrollStartY - e.touches[0].clientY;
+            if (Math.abs(deltaY) > 10) {
+                sendCommand({
+                    type: 'scroll',
+                    dy: Math.sign(deltaY) * 3
+                });
+                scrollStartY = e.touches[0].clientY;
+            }
+        });
+        
+        // Keyboard functions
+        function toggleKeyboard() {
+            const input = document.getElementById('keyboardInput');
+            input.focus();
+            input.click();
+        }
+        
+        document.getElementById('keyboardInput').addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value) {
+                sendCommand({
+                    type: 'type',
+                    text: value
+                });
+                e.target.value = '';
+            }
+        });
+        
+        // Handle backspace key
+        document.getElementById('keyboardInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && e.target.value === '') {
+                e.preventDefault();
+                sendCommand({ type: 'key', key: 'backspace' });
+            }
+        });
+        
+        function sendKey(key) {
+            if (sendCommand({ type: 'key', key: key })) {
+                // Visual feedback
+                event.target.style.background = '#0f9d58';
+                setTimeout(() => {
+                    event.target.style.background = '#16213e';
+                }, 100);
+            }
+        }
+        
+        function sendCombo(keys) {
+            if (sendCommand({ type: 'combo', keys: keys })) {
+                // Visual feedback
+                event.target.style.background = '#0f9d58';
+                setTimeout(() => {
+                    event.target.style.background = '#16213e';
+                }, 100);
+            }
+        }
+        
+        // Prevent default touch behaviors
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.touchpad') || e.target.closest('.scroll-area')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>

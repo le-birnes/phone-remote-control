@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>PC Remote Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        .setup-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+        }
+        
+        .setup-screen.hidden {
+            display: none;
+        }
+        
+        .setup-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .setup-box h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .setup-box input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .setup-box button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #4caf50;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .setup-box button:active {
+            transform: scale(0.98);
+        }
+        
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .status.connected {
+            background: #4caf50;
+        }
+        
+        .status.disconnected {
+            background: #f44336;
+        }
+        
+        .controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .touchpad {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            position: relative;
+            touch-action: none;
+            min-height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .touchpad-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            font-size: 18px;
+            pointer-events: none;
+        }
+        
+        .mouse-buttons {
+            display: flex;
+            gap: 10px;
+            height: 60px;
+        }
+        
+        .mouse-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mouse-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
+        }
+        
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .action-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
+        }
+        
+        .keyboard-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #4caf50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+        
+        .keyboard-toggle:active {
+            transform: scale(0.9);
+        }
+        
+        .keyboard-input {
+            position: fixed;
+            bottom: -100px;
+            left: 0;
+            width: 100%;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .scroll-area {
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            margin-top: 10px;
+        }
+        
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        @media (max-height: 600px) {
+            .touchpad {
+                min-height: 150px;
+            }
+            .actions {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Setup Screen -->
+    <div class="setup-screen" id="setupScreen">
+        <div class="setup-box">
+            <h2>Connect to PC</h2>
+            <p style="margin-bottom: 20px; opacity: 0.8; font-size: 14px;">
+                Enter your computer's IP address. You can find this in the server console.
+            </p>
+            <input type="text" id="serverIp" placeholder="Computer IP (e.g., 192.168.1.100)" value="">
+            <input type="number" id="serverPort" placeholder="Port (default: 8765)" value="8765">
+            <button onclick="connectToServer()">Connect</button>
+            <button onclick="useLastConnection()" style="background: #2196F3;">Use Last Connection</button>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="container">
+        <div class="settings-btn" onclick="showSetup()">⚙️</div>
+        
+        <div class="header">
+            <h2>PC Remote Control</h2>
+            <span id="status" class="status disconnected">Not Connected</span>
+        </div>
+        
+        <div class="controls">
+            <div class="touchpad" id="touchpad">
+                <div class="touchpad-info">TOUCHPAD</div>
+            </div>
+            
+            <div class="mouse-buttons">
+                <div class="mouse-btn" id="leftClick">LEFT</div>
+                <div class="mouse-btn" id="rightClick">RIGHT</div>
+                <div class="mouse-btn" id="middleClick">MIDDLE</div>
+            </div>
+            
+            <div class="scroll-area" id="scrollArea">
+                <div>SCROLL (Swipe up/down)</div>
+            </div>
+            
+            <div class="actions">
+                <div class="action-btn" onclick="sendKey('escape')">ESC</div>
+                <div class="action-btn" onclick="sendKey('enter')">ENTER</div>
+                <div class="action-btn" onclick="sendKey('space')">SPACE</div>
+                <div class="action-btn" onclick="sendKey('backspace')">BACK</div>
+                <div class="action-btn" onclick="sendKey('tab')">TAB</div>
+                <div class="action-btn" onclick="sendCombo(['alt', 'tab'])">ALT+TAB</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'c'])">COPY</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'v'])">PASTE</div>
+                <div class="action-btn" onclick="sendCombo(['ctrl', 'z'])">UNDO</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="keyboard-toggle" onclick="toggleKeyboard()">⌨️</div>
+    
+    <input type="text" id="keyboardInput" class="keyboard-input" />
+    
+    <script>
+        let ws = null;
+        let touchpadActive = false;
+        let lastX = 0;
+        let lastY = 0;
+        let lastTouchTime = 0;
+        let serverConfig = {
+            ip: '',
+            port: 8765
+        };
+        
+        // Load saved connection
+        window.onload = () => {
+            const saved = localStorage.getItem('serverConfig');
+            if (saved) {
+                serverConfig = JSON.parse(saved);
+                document.getElementById('serverIp').value = serverConfig.ip;
+                document.getElementById('serverPort').value = serverConfig.port;
+            }
+        };
+        
+        function showSetup() {
+            document.getElementById('setupScreen').classList.remove('hidden');
+            if (ws) {
+                ws.close();
+            }
+        }
+        
+        function connectToServer() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value || 8765;
+            
+            if (!ip) {
+                alert('Please enter the computer IP address');
+                return;
+            }
+            
+            serverConfig = { ip, port };
+            localStorage.setItem('serverConfig', JSON.stringify(serverConfig));
+            
+            document.getElementById('setupScreen').classList.add('hidden');
+            connect();
+        }
+        
+        function useLastConnection() {
+            if (serverConfig.ip) {
+                document.getElementById('setupScreen').classList.add('hidden');
+                connect();
+            } else {
+                alert('No saved connection found');
+            }
+        }
+        
+        // Connect to WebSocket
+        function connect() {
+            if (!serverConfig.ip) {
+                showSetup();
+                return;
+            }
+            
+            const wsUrl = `ws://${serverConfig.ip}:${serverConfig.port}`;
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    document.getElementById('status').textContent = 'Connected';
+                    document.getElementById('status').className = 'status connected';
+                };
+                
+                ws.onclose = () => {
+                    document.getElementById('status').textContent = 'Disconnected';
+                    document.getElementById('status').className = 'status disconnected';
+                    setTimeout(connect, 2000);
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    document.getElementById('status').textContent = 'Connection Error';
+                    document.getElementById('status').className = 'status disconnected';
+                };
+            } catch (e) {
+                console.error('Failed to connect:', e);
+                showSetup();
+            }
+        }
+        
+        // Send command to server
+        function sendCommand(cmd) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(cmd));
+            } else {
+                console.log('Not connected');
+            }
+        }
+        
+        // Touchpad handling
+        const touchpad = document.getElementById('touchpad');
+        
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchpadActive = true;
+            const touch = e.touches[0];
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+            lastTouchTime = Date.now();
+        });
+        
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!touchpadActive) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - lastX;
+            const deltaY = touch.clientY - lastY;
+            
+            // Send mouse move command
+            sendCommand({
+                type: 'mouse_move',
+                dx: deltaX * 2,  // Multiply for sensitivity
+                dy: deltaY * 2
+            });
+            
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+        });
+        
+        touchpad.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touchDuration = Date.now() - lastTouchTime;
+            
+            // Tap to click
+            if (touchDuration < 200) {
+                sendCommand({ type: 'click', button: 'left' });
+            }
+            
+            touchpadActive = false;
+        });
+        
+        // Double tap for right click
+        let lastTapTime = 0;
+        touchpad.addEventListener('touchstart', (e) => {
+            const currentTime = Date.now();
+            const tapInterval = currentTime - lastTapTime;
+            
+            if (tapInterval < 300 && tapInterval > 0) {
+                e.preventDefault();
+                sendCommand({ type: 'click', button: 'right' });
+            }
+            
+            lastTapTime = currentTime;
+        });
+        
+        // Mouse buttons
+        document.getElementById('leftClick').addEventListener('click', () => {
+            sendCommand({ type: 'click', button: 'left' });
+        });
+        
+        document.getElementById('rightClick').addEventListener('click', () => {
+            sendCommand({ type: 'click', button: 'right' });
+        });
+        
+        document.getElementById('middleClick').addEventListener('click', () => {
+            sendCommand({ type: 'click', button: 'middle' });
+        });
+        
+        // Scroll area
+        const scrollArea = document.getElementById('scrollArea');
+        let scrollStartY = 0;
+        
+        scrollArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            scrollStartY = e.touches[0].clientY;
+        });
+        
+        scrollArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const deltaY = e.touches[0].clientY - scrollStartY;
+            sendCommand({
+                type: 'scroll',
+                dy: -Math.sign(deltaY) * 3
+            });
+            scrollStartY = e.touches[0].clientY;
+        });
+        
+        // Keyboard functions
+        function toggleKeyboard() {
+            const input = document.getElementById('keyboardInput');
+            input.focus();
+            input.click();
+        }
+        
+        document.getElementById('keyboardInput').addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value) {
+                sendCommand({
+                    type: 'type',
+                    text: value
+                });
+                e.target.value = '';
+            }
+        });
+        
+        function sendKey(key) {
+            sendCommand({
+                type: 'key',
+                key: key
+            });
+        }
+        
+        function sendCombo(keys) {
+            sendCommand({
+                type: 'combo',
+                keys: keys
+            });
+        }
+        
+        // Prevent default touch behaviors
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.touchpad') || e.target.closest('.scroll-area')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
