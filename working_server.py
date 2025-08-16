@@ -9,7 +9,43 @@ import websockets
 import json
 import pyautogui
 import socket
+import sys
+import os
+import subprocess
 from aiohttp import web
+
+# Kill any existing instances of this server
+def kill_existing_servers():
+    """Kill any existing Python processes running this script"""
+    current_pid = os.getpid()
+    script_name = os.path.basename(__file__)
+    
+    if sys.platform == 'win32':
+        # Get all python processes
+        try:
+            result = subprocess.run(['wmic', 'process', 'where', "name='python.exe' or name='py.exe'", 
+                                   'get', 'ProcessId,CommandLine'], 
+                                  capture_output=True, text=True)
+            
+            for line in result.stdout.split('\n'):
+                if script_name in line and 'working_server' in line:
+                    # Extract PID from the line
+                    parts = line.split()
+                    if parts:
+                        try:
+                            pid = int(parts[-1])
+                            if pid != current_pid:
+                                # Kill the old process
+                                subprocess.run(['taskkill', '/F', '/PID', str(pid)], 
+                                             capture_output=True)
+                                print(f"[!] Killed old server instance (PID: {pid})")
+                        except (ValueError, subprocess.CalledProcessError):
+                            pass
+        except Exception as e:
+            pass  # Silently continue if WMIC fails
+
+# Kill old instances before starting
+kill_existing_servers()
 
 # Configure pyautogui
 pyautogui.FAILSAFE = False
